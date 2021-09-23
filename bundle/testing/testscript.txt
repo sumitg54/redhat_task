@@ -1,0 +1,76 @@
+from PIL import Image
+im = Image.open(requests.get(comicImgLink, stream=True).raw)
+
+import random
+import requests
+import mysql.connector
+import json
+
+randomlist = random.sample(range(1, 87), 15)
+
+class create_dict(dict): 
+  
+    # __init__ function 
+    def __init__(self): 
+        self = dict() 
+          
+    # Function to add key:value 
+    def add(self, key, value): 
+        self[key] = value
+
+#MySql Connection
+mydb = mysql.connector.connect(
+  host="localhost",
+  user="root",
+  password="pass@123"
+)
+
+mycursor = mydb.cursor()
+
+mycursor.execute("CREATE DATABASE if not exists mydatabase")
+mycursor.execute("CREATE TABLE if not exists mydatabase.comic1 (comic_name VARCHAR(255), alt_text VARCHAR(255), number int, link VARCHAR(255),image VARCHAR(255), imageLink VARCHAR(255))")
+mycursor.execute("TRUNCATE TABLE mydatabase.comic1")
+
+recordList=[]
+for x in randomlist:
+    #print(x)
+    getComic = requests.get("https://xkcd.com/{0}/info.0.json".format(x))
+    #print(getComic)
+    if (getComic.status_code == 200):
+        #print("The request was a success!")
+        #print(getComic.json())
+        comic_details=getComic.json()
+        comicName=comic_details["title"]
+        comicAltText=comic_details["alt"]
+        comicNumber=comic_details["num"]
+        comicLink=comic_details["link"]
+        comicImg=comic_details["img"].split("/")[-1]
+        comicImgLink=comic_details["img"]
+        recordList.append((comicName,comicAltText,comicNumber,comicLink,comicImg,comicImgLink))
+        # Code here will only run if the request is successful
+    elif (response.status_code == 404):
+        print("Result not found!")
+        # Code here will react to failed requests
+
+#print(recordList)
+#Insert into DB
+insert_sql = "INSERT INTO mydatabase.comic1 (comic_name, alt_text, number, link, image, imageLink) VALUES (%s, %s, %s, %s, %s, %s)"
+mycursor.executemany(insert_sql, recordList)
+mydb.commit()
+
+#print(mycursor.rowcount, "record inserted.")
+
+mycursor.execute("SELECT * FROM mydatabase.comic1")
+myresult = mycursor.fetchall()
+
+final=[]
+for row in myresult:
+    mydict = create_dict()
+    mydict.add("comic",row[0])
+    mydict.add("comic_meta",({"alt_text":row[1],"number":row[2],"link":row[3],"image":row[3],"image_link":row[3]}))
+    final.append(mydict)
+    
+stud_json = json.dumps(final, indent=2, sort_keys=True)
+print(stud_json)
+
+mycursor.close()
