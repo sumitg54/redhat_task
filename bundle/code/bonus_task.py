@@ -37,7 +37,7 @@ if INPUT.lower() == ("yes"):
         where_clasue="where comic_name='{0}'".format(INPUT1);
 
     #select data using query
-    sql="SELECT imageLink FROM mydatabase.comic1 {0}".format(where_clasue)
+    sql="SELECT imageLink FROM comic_db.comic {0}".format(where_clasue)
     mycursor.execute(sql)
     output = mycursor.fetchone()    
     if(mycursor.rowcount != 0):
